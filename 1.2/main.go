@@ -15,12 +15,7 @@ func main() {
 
 	for _, line := range util.ReadInputLines("./input.txt") {
 		if line == "" {
-			top3 = append(top3, curr)
-
-			if len(top3) > 3 {
-				sort.Ints(top3)
-				top3 = top3[1:]
-			}
+			top3 = insert(top3, curr)
 
 			curr = 0
 			continue
@@ -32,5 +27,19 @@ func main() {
 		curr += value
 	}
 
+	// Get the last one
+	top3 = insert(top3, curr)
+
 	fmt.Printf("%d\n", top3[0]+top3[1]+top3[2])
+}
+
+func insert(top3 []int, curr int) []int {
+	top3 = append(top3, curr)
+
+	if len(top3) > 3 {
+		sort.Ints(top3)
+		top3 = top3[1:]
+	}
+
+	return top3
 }
