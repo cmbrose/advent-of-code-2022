@@ -4,46 +4,41 @@ import (
 	"testing"
 )
 
-func TestIntersect(t *testing.T) {
+func TestIntersectInts(t *testing.T) {
 	tests := []struct {
-		a []interface{}
-		b []interface{}
-		e []interface{}
+		a []int
+		b []int
+		e []int
 	}{
 		{
-			[]interface{}{1, 2, 3},
-			[]interface{}{1, 2, 3},
-			[]interface{}{1, 2, 3},
+			[]int{1, 2, 3},
+			[]int{1, 2, 3},
+			[]int{1, 2, 3},
 		},
 		{
-			[]interface{}{1, 2, 3},
-			[]interface{}{3, 4, 5},
-			[]interface{}{3},
+			[]int{1, 2, 3},
+			[]int{3, 4, 5},
+			[]int{3},
 		},
 		{
-			[]interface{}{1, 2, 3},
-			[]interface{}{4, 5, 6},
-			[]interface{}{},
+			[]int{1, 2, 3},
+			[]int{4, 5, 6},
+			[]int{},
 		},
 		{
-			[]interface{}{},
-			[]interface{}{4, 5, 6},
-			[]interface{}{},
+			[]int{},
+			[]int{4, 5, 6},
+			[]int{},
 		},
 		{
-			[]interface{}{1, 2, 3},
-			[]interface{}{},
-			[]interface{}{},
+			[]int{1, 2, 3},
+			[]int{},
+			[]int{},
 		},
 		{
-			[]interface{}{1},
-			[]interface{}{1},
-			[]interface{}{1},
-		},
-		{
-			[]interface{}{'a', 'b', 'c'},
-			[]interface{}{'b', 'c', 'e'},
-			[]interface{}{'b', 'c'},
+			[]int{1},
+			[]int{1},
+			[]int{1},
 		},
 	}
 
@@ -57,63 +52,81 @@ func TestIntersect(t *testing.T) {
 		for i, exp := range test.e {
 			act := actual[i]
 			if act != exp {
-				// TODO - report char values better
 				t.Fatalf("Incorrect value at index %d. Expected=%v, got=%v", i, exp, act)
 			}
 		}
 	}
 }
 
-func TestExcept(t *testing.T) {
+func TestIntersectRunes(t *testing.T) {
 	tests := []struct {
-		a []interface{}
-		b []interface{}
-		e []interface{}
+		a []rune
+		b []rune
+		e []rune
 	}{
 		{
-			[]interface{}{1, 2, 3},
-			[]interface{}{1, 2, 3},
-			[]interface{}{},
+			[]rune{'a', 'b', 'c'},
+			[]rune{'b', 'c', 'e'},
+			[]rune{'b', 'c'},
+		},
+	}
+
+	for _, test := range tests {
+		actual := Intersect(test.a, test.b)
+
+		if len(actual) != len(test.e) {
+			t.Fatalf("Incorrect output length. Expected=%d, got=%d", len(test.e), len(actual))
+		}
+
+		for i, exp := range test.e {
+			act := actual[i]
+			if act != exp {
+				t.Fatalf("Incorrect value at index %d. Expected=%v, got=%v", i, exp, act)
+			}
+		}
+	}
+}
+
+func TestExceptInts(t *testing.T) {
+	tests := []struct {
+		a []int
+		b []int
+		e []int
+	}{
+		{
+			[]int{1, 2, 3},
+			[]int{1, 2, 3},
+			[]int{},
 		},
 		{
-			[]interface{}{1, 2, 3},
-			[]interface{}{3, 4, 5},
-			[]interface{}{1, 2},
+			[]int{1, 2, 3},
+			[]int{3, 4, 5},
+			[]int{1, 2},
 		},
 		{
-			[]interface{}{1, 2, 3},
-			[]interface{}{4, 5, 6},
-			[]interface{}{1, 2, 3},
+			[]int{1, 2, 3},
+			[]int{4, 5, 6},
+			[]int{1, 2, 3},
 		},
 		{
-			[]interface{}{},
-			[]interface{}{4, 5, 6},
-			[]interface{}{},
+			[]int{},
+			[]int{4, 5, 6},
+			[]int{},
 		},
 		{
-			[]interface{}{1, 2, 3},
-			[]interface{}{},
-			[]interface{}{1, 2, 3},
+			[]int{1, 2, 3},
+			[]int{},
+			[]int{1, 2, 3},
 		},
 		{
-			[]interface{}{1},
-			[]interface{}{1},
-			[]interface{}{},
+			[]int{1},
+			[]int{1},
+			[]int{},
 		},
 		{
-			[]interface{}{1},
-			[]interface{}{2},
-			[]interface{}{1},
-		},
-		{
-			[]interface{}{'a', 'b', 'c'},
-			[]interface{}{'b', 'c', 'e'},
-			[]interface{}{'a'},
-		},
-		{
-			[]interface{}{'a', 'b', 'd'},
-			[]interface{}{'a', 'b'},
-			[]interface{}{'d'},
+			[]int{1},
+			[]int{2},
+			[]int{1},
 		},
 	}
 
@@ -127,7 +140,40 @@ func TestExcept(t *testing.T) {
 		for i, exp := range test.e {
 			act := actual[i]
 			if act != exp {
-				// TODO - report char values better
+				t.Fatalf("Incorrect value at index %d. Expected=%v, got=%v", i, exp, act)
+			}
+		}
+	}
+}
+
+func TestExceptRunes(t *testing.T) {
+	tests := []struct {
+		a []rune
+		b []rune
+		e []rune
+	}{
+		{
+			[]rune{'a', 'b', 'c'},
+			[]rune{'b', 'c', 'e'},
+			[]rune{'a'},
+		},
+		{
+			[]rune{'a', 'b', 'd'},
+			[]rune{'a', 'b'},
+			[]rune{'d'},
+		},
+	}
+
+	for _, test := range tests {
+		actual := Except(test.a, test.b)
+
+		if len(actual) != len(test.e) {
+			t.Fatalf("Incorrect output length. Expected=%v, got=%v", test.e, actual)
+		}
+
+		for i, exp := range test.e {
+			act := actual[i]
+			if act != exp {
 				t.Fatalf("Incorrect value at index %d. Expected=%v, got=%v", i, exp, act)
 			}
 		}

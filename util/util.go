@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"golang.org/x/exp/constraints"
 )
 
 func Check(err error) {
@@ -56,12 +58,12 @@ func MaxInt(x, y int) int {
 }
 
 // Must be pre-sorted!
-func Intersect(a, b []interface{}) []interface{} {
-	if len(a) == 0 || len(b) == 0 {
-		return []interface{}{}
-	}
+func Intersect[T constraints.Ordered](a, b []T) []T {
+	var res []T
 
-	res := []interface{}{}
+	if len(a) == 0 || len(b) == 0 {
+		return res
+	}
 
 	i := 0
 	j := 0
@@ -69,12 +71,11 @@ func Intersect(a, b []interface{}) []interface{} {
 		a := a[i]
 		b := b[j]
 
-		comp := Compare(a, b)
-		if comp == 0 {
+		if a == b {
 			res = append(res, a)
 			i++
 			j++
-		} else if comp > 0 { // a > b
+		} else if a > b { // a > b
 			j++
 		} else { // a < b
 			i++
@@ -84,9 +85,9 @@ func Intersect(a, b []interface{}) []interface{} {
 	return res
 }
 
-func IntersectAll(a ...[]interface{}) []interface{} {
+func IntersectAll[T constraints.Ordered](a ...[]T) []T {
 	if len(a) == 0 {
-		return []interface{}{}
+		return nil
 	}
 
 	cur := a[0]
@@ -103,12 +104,12 @@ func IntersectAll(a ...[]interface{}) []interface{} {
 }
 
 // Must be pre-sorted!
-func Except(a, b []interface{}) []interface{} {
+func Except[T constraints.Ordered](a, b []T) []T {
 	if len(a) == 0 || len(b) == 0 {
 		return a
 	}
 
-	res := []interface{}{}
+	var res []T
 
 	i := 0
 	j := 0
@@ -116,11 +117,10 @@ func Except(a, b []interface{}) []interface{} {
 		a := a[i]
 		b := b[j]
 
-		comp := Compare(a, b)
-		if comp == 0 {
+		if a == b {
 			i++
 			j++
-		} else if comp > 0 { // a > b
+		} else if a > b { // a > b
 			j++
 		} else { // a < b
 			res = append(res, a)
@@ -137,7 +137,7 @@ func Except(a, b []interface{}) []interface{} {
 }
 
 // Must be pre-sorted!
-func ExceptAll(a []interface{}, b ...[]interface{}) []interface{} {
+func ExceptAll[T constraints.Ordered](a []T, b ...[]T) []T {
 	if len(a) == 0 || len(b) == 0 {
 		return a
 	}
@@ -169,27 +169,6 @@ func RuneSliceToInterfaceSlice(a []rune) []interface{} {
 	}
 
 	return res
-}
-
-func Compare(a, b interface{}) int {
-	switch a := a.(type) {
-	case int:
-		b, ok := b.(int)
-		if !ok {
-			panic("type mismatch")
-		}
-		return a - b
-
-	case rune:
-		b, ok := b.(rune)
-		if !ok {
-			panic("type mismatch")
-		}
-		return int(a) - int(b)
-
-	default:
-		panic("Unhandled type")
-	}
 }
 
 func ParseIntGrid() [][]int {

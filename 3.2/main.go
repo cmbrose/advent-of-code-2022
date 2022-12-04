@@ -21,20 +21,20 @@ func main() {
 	res := 0
 
 	idx := 0
-	packs := make([][]interface{}, 3)
+	packs := make([][]rune, 3)
 
 	for _, line := range util.ReadInputLines("./input.txt") {
 		pack := []rune(line)
 
 		sort.Slice(pack, func(i, j int) bool { return pack[i] < pack[j] })
 
-		packs[idx] = util.RuneSliceToInterfaceSlice(pack)
+		packs[idx] = pack
 
 		idx += 1
 
 		if idx == 3 {
 			diff := util.IntersectAll(packs...)
-			item := diff[0].(rune)
+			item := diff[0]
 			res += itemToPriority(item)
 
 			idx = 0

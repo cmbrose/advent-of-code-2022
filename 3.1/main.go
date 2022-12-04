@@ -27,12 +27,9 @@ func main() {
 		sort.Slice(left, func(i, j int) bool { return left[i] < left[j] })
 		sort.Slice(right, func(i, j int) bool { return right[i] < right[j] })
 
-		diff := util.Intersect(
-			util.RuneSliceToInterfaceSlice(left),
-			util.RuneSliceToInterfaceSlice(right),
-		)
+		diff := util.Intersect(left, right)
 
-		item := diff[0].(rune)
+		item := diff[0]
 
 		res += itemToPriority(item)
 	}
