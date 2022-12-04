@@ -7,42 +7,41 @@ import (
 	"main/util"
 )
 
-var (
-	rock     = 1
-	paper    = 2
-	scissors = 3
-)
-
-// Opponent move -> Desired result -> Your Move
-var resultMatrix [][]int = [][]int{
-	// rock
-	{
-		scissors, // lose
-		rock,     // draw
-		paper,    // win
-	},
-	// paper
-	{
-		rock,     // lose
-		paper,    // draw
-		scissors, // win
-	},
-	// scissors
-	{
-		paper,    // lose
-		scissors, // draw
-		rock,     // win
-	},
-}
-
 func inputToScore(opp, result string) int {
-	oppIdx := int(opp[0] - 'A')
-	resIdx := int(result[0] - 'X')
+	oppVal := int(opp[0] - 'A')
+	resVal := int(result[0] - 'X')
 
-	you := resultMatrix[oppIdx][resIdx]
+	// Opp | Res | Diff   | You
+	// ----+-----+--------+----
+	// 0 R | 0 L | 0      | 2 S
+	// 0 R | 1 D | -1 (2) | 0 R
+	// 0 R | 2 W | -2 (1) | 1 P
+	// ----+-----+---------+----
+	// 1 P | 0 L | 1      | 0 R
+	// 1 P | 1 D | 0      | 1 P
+	// 1 P | 2 W | -1 (2) | 2 S
+	// ----+-----+--------+----
+	// 2 S | 0 L | 2      | 1 P
+	// 2 S | 1 D | 1      | 2 S
+	// 2 S | 2 W | 0      | 0 R
 
-	//fmt.Printf("%s %s => %d, %d\n", opp, result, you, resIdx*3)
-	return resIdx*3 + you
+	// You = (Diff + ResModifier) % 3
+
+	// Diff = (Opp - Res + 3) % 3
+
+	// ResModifier(lose) = +2
+	// ResModifier(draw) => +1
+	// ResModifier(win)  => +0
+	// => ResModifier = 2 - Res
+
+	// You = (((Opp - Res + 3) % 3) + (2 - Res)) % 3
+	// You = (Opp - Res + 3 + 2 - Res) % 3
+	// You = (Opp - 2*Res + 5) % 3
+
+	you := (oppVal-2*resVal+5)%3 + 1 // +1 to re-align with the score of each move
+
+	// fmt.Printf("%s %s => %d, %d\n", opp, result, you, resVal*3)
+	return resVal*3 + you
 }
 
 func main() {
