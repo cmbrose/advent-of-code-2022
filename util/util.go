@@ -237,3 +237,19 @@ func HexToBinary(char byte) string {
 
 	panic(fmt.Sprintf("Unknown hex char: %c", char))
 }
+
+func IsUppercase(b byte) bool {
+	return b >= 'A' && b <= 'Z'
+}
+
+func IsLowercase(b byte) bool {
+	return b >= 'a' && b <= 'z'
+}
+
+func IsLetter(b byte) bool {
+	return IsUppercase(b) || IsLowercase(b)
+}
+
+func IsNumber(b byte) bool {
+	return b >= '0' && b <= '9'
+}
