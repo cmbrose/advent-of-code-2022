@@ -151,26 +151,6 @@ func ExceptAll[T constraints.Ordered](a []T, b ...[]T) []T {
 	return cur
 }
 
-func IntSliceToInterfaceSlice(a []int) []interface{} {
-	res := make([]interface{}, len(a))
-
-	for i, a := range a {
-		res[i] = a
-	}
-
-	return res
-}
-
-func RuneSliceToInterfaceSlice(a []rune) []interface{} {
-	res := make([]interface{}, len(a))
-
-	for i, a := range a {
-		res[i] = a
-	}
-
-	return res
-}
-
 func ParseIntGrid() [][]int {
 	grid := [][]int{}
 
