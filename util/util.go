@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"golang.org/x/exp/constraints"
@@ -19,6 +20,34 @@ func ReadInputLines(path string) []string {
 	Check(err)
 
 	return strings.Split(string(content), "\n")
+}
+
+func ReadInputBlocks() [][]string {
+	content, err := os.ReadFile("./input.txt")
+	Check(err)
+
+	blocks := strings.Split(string(content), "\n\n")
+
+	return Map(blocks, func(block string) []string {
+		return strings.Split(block, "\n")
+	})
+}
+
+func Map[X, Y any](xArr []X, f func(X) Y) []Y {
+	yArr := make([]Y, len(xArr))
+
+	for i, x := range xArr {
+		y := f(x)
+		yArr[i] = y
+	}
+
+	return yArr
+}
+
+func AssertInt(str string) int {
+	i, err := strconv.Atoi(str)
+	Check(err)
+	return i
 }
 
 func ParseBitString(str string) int {
