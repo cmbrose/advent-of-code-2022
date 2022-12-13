@@ -44,6 +44,16 @@ func Map[X, Y any](xArr []X, f func(X) Y) []Y {
 	return yArr
 }
 
+func Keys[K comparable, V any](m map[K]V) []K {
+	keys := make([]K, len(m))
+	i := 0
+	for k := range m {
+		keys[i] = k
+		i += 1
+	}
+	return keys
+}
+
 func AssertInt(str string) int {
 	i, err := strconv.Atoi(str)
 	Check(err)
@@ -70,20 +80,28 @@ func AbsInt(x int) int {
 	}
 }
 
-func MinInt(x, y int) int {
-	if x < y {
-		return x
+func MinInt(ints ...int) int {
+	var min int
+
+	for i, x := range ints {
+		if i == 0 || x < min {
+			min = x
+		}
 	}
 
-	return y
+	return min
 }
 
-func MaxInt(x, y int) int {
-	if x < y {
-		return y
+func MaxInt(ints ...int) int {
+	var max int
+
+	for i, x := range ints {
+		if i == 0 || x > max {
+			max = x
+		}
 	}
 
-	return x
+	return max
 }
 
 // Must be pre-sorted!
@@ -261,4 +279,14 @@ func IsLetter(b byte) bool {
 
 func IsNumber(b byte) bool {
 	return b >= '0' && b <= '9'
+}
+
+func Grid[T any](w, h int) [][]T {
+	var grid [][]T
+
+	for i := 0; i < h; i += 1 {
+		grid = append(grid, make([]T, w))
+	}
+
+	return grid
 }
