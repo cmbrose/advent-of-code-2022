@@ -72,6 +72,16 @@ func ParseBitString(str string) int {
 	return val
 }
 
+func IntSign(x int) int {
+	if x > 0 {
+		return 1
+	}
+	if x < 0 {
+		return -1
+	}
+	return 0
+}
+
 func AbsInt(x int) int {
 	if x < 0 {
 		return -x
@@ -213,13 +223,17 @@ func ParseIntGrid() [][]int {
 	return grid
 }
 
-func PrintIntGrid(grid [][]int) {
+func PrintGrid[T any](grid [][]T, f string) {
 	rows := make([]string, len(grid))
+
+	if f == "" {
+		f = "%v"
+	}
 
 	for i, row := range grid {
 		rows[i] = ""
 		for _, cell := range row {
-			rows[i] += fmt.Sprintf("%d", cell)
+			rows[i] += fmt.Sprintf(f, cell)
 		}
 	}
 
@@ -289,4 +303,30 @@ func Grid[T any](w, h int) [][]T {
 	}
 
 	return grid
+}
+
+func FillGrid[T any](w, h int, def T) [][]T {
+	var grid [][]T
+
+	for i := 0; i < h; i += 1 {
+		row := make([]T, w)
+		for i := range row {
+			row[i] = def
+		}
+		grid = append(grid, row)
+	}
+
+	return grid
+}
+
+func Step(x1, y1, x2, y2 int, f func(x, y int)) {
+	stepX := IntSign(x2 - x1)
+	stepY := IntSign(y2 - y1)
+
+	for x, y := x1, y1; x != x2 || y != y2; x, y = x+stepX, y+stepY {
+		f(x, y)
+	}
+
+	// The last step is missed in the loop
+	f(x2, y2)
 }
