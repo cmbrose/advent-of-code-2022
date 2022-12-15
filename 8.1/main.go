@@ -19,7 +19,7 @@ func main() {
 	// 35390     X3559
 	var left, right, up, down [][]int
 
-	util.PrintIntGrid(grid)
+	util.PrintGrid(grid, "")
 	fmt.Println()
 
 	for _, row := range grid {
@@ -52,13 +52,13 @@ func main() {
 		}
 	}
 
-	util.PrintIntGrid(left)
+	util.PrintGrid(left, "")
 	fmt.Println()
-	util.PrintIntGrid(right)
+	util.PrintGrid(right, "")
 	fmt.Println()
-	util.PrintIntGrid(up)
+	util.PrintGrid(up, "")
 	fmt.Println()
-	util.PrintIntGrid(down)
+	util.PrintGrid(down, "")
 	fmt.Println()
 
 	cnt := 0
