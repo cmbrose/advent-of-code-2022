@@ -44,16 +44,6 @@ func Map[X, Y any](xArr []X, f func(X) Y) []Y {
 	return yArr
 }
 
-func Keys[K comparable, V any](m map[K]V) []K {
-	keys := make([]K, len(m))
-	i := 0
-	for k := range m {
-		keys[i] = k
-		i += 1
-	}
-	return keys
-}
-
 func AssertInt(str string) int {
 	i, err := strconv.Atoi(str)
 	Check(err)
