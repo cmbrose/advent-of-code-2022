@@ -102,10 +102,10 @@ func getMaxPressureRelief(valves []*valve, cur int, minutesLeft int, from []stri
 
 	stateKey := getStateKey(valves[0].name, valves[1].name, cur, minutesLeft)
 
-	// if val, ok := cache[stateKey]; ok {
-	// 	//fmt.Printf("%s | %d (cache %s)\n", path, val, stateKey)
-	// 	return val
-	// }
+	if val, ok := cache[stateKey]; ok {
+		//fmt.Printf("%s | %d (cache %s)\n", path, val, stateKey)
+		return val
+	}
 
 	maxPressure := 0
 
