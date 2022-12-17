@@ -6,79 +6,56 @@ import (
 	"strings"
 )
 
-const pitWidth = 7
+type rock uint32
 
-type point struct {
-	x, y int
+const fullRow byte = 0b01111111
+
+func (r rock) isFarLeft() bool {
+	return r&0b01000000010000000100000001000000 != 0
 }
 
-type rock struct {
-	shape [][]byte
+func (r rock) shiftLeft() rock {
+	return (r & 0b10000000100000001000000010000000) | // height checkers
+		(r&0b00111111001111110011111100111111)<<1 // actual shape
+}
 
-	w, h int
+func (r rock) isFarRight() bool {
+	return r&0b00000001000000010000000100000001 != 0
+}
 
-	l, r, b []point
+func (r rock) shiftRight() rock {
+	return (r & 0b10000000100000001000000010000000) | // height checkers
+		(r&0b01111110011111100111111001111110)>>1 // actual shape
+}
+
+func (r rock) height() int {
+	return int((r & (1 << 31) >> 31) + (r & (1 << 23) >> 23) + (r & (1 << 15) >> 15) + (r & (1 << 7) >> 7))
+}
+
+func (r rock) getRow(row int) byte {
+	return byte((r >> (8 * (3 - row))) & 0b01111111)
 }
 
 func makeRock(shape [][]byte) rock {
-	return rock{
-		shape,
-		len(shape[0]),
-		len(shape),
-		getSide(shape, '<'),
-		getSide(shape, '>'),
-		getBottom(shape),
-	}
-}
-
-func getSide(r [][]byte, dir byte) []point {
-	var ps []point
-
-	for y := 0; y < len(r); y += 1 {
-		if dir == '>' {
-			for x := len(r[y]) - 1; x >= 0; x -= 1 {
-				if r[y][x] == '#' {
-					ps = append(ps, point{x, y})
-					break
-				}
-			}
-		} else {
-			for x := 0; x < len(r[y]); x += 1 {
-				if r[y][x] == '#' {
-					ps = append(ps, point{x, y})
-					break
-				}
-			}
+	var r rock
+	for y := 0; y < 4; y += 1 {
+		r = r << 8
+		if y >= len(shape) {
+			continue
 		}
-	}
 
-	return ps
-}
-
-func getBottom(r [][]byte) []point {
-	minPoint := make(map[int]int) // x -> y
-
-	for y := len(r) - 1; y >= 0; y -= 1 {
-		for x := 0; x < len(r[y]); x += 1 {
-			if _, ok := minPoint[x]; ok {
+		for x := 0; x < len(shape[y]); x += 1 {
+			if shape[y][x] == '.' {
 				continue
 			}
-
-			if r[y][x] == '#' {
-				minPoint[x] = y
-			}
+			r |= 1 << (4 - x)
 		}
 
-		if len(minPoint) == len(r[0]) {
-			break
+		if r&0b01111111 != 0 {
+			r |= 1 << 7
 		}
 	}
-
-	var ps []point
-	for x, y := range minPoint {
-		ps = append(ps, point{x, y})
-	}
-	return ps
+	return r
 }
 
 func main() {
@@ -91,8 +68,7 @@ func main() {
 		})
 
 		r := makeRock(shape)
-
-		//fmt.Println(lines, r)
+		//fmt.Printf("%v, %032b, %d\n", lines, r, r.height())
 		return r
 	})
 
@@ -111,83 +87,93 @@ func main() {
 	}
 
 	top := 0
-	pit := [][]byte{}
+	pit := []byte{}
 
 	target := 1_000_000_000_000
 
-	for i := 0; i < target; i += 1 {
+	for y := 0; y < target; y += 1 {
 		r := nextRock()
-		requiredHeight := top + 3 + r.h
+		requiredHeight := top + 3 + r.height()
 
 		for height := len(pit); height < requiredHeight; height += 1 {
-			pit = append(pit, emptyRow())
+			pit = append(pit, 0)
 		}
 
 		testTop := fall(r, requiredHeight-1, pit, nextWind)
 		top = util.MaxInt(top, testTop)
-		//printPit(pit)
+		//printPit(pit, 0, 0)
 	}
-
+	//printPit(pit, 0, 0)
 	fmt.Println(top)
 }
 
-func printPit(pit [][]byte) {
+func printPit(pit []byte, r rock, rY int) {
 	var bldr strings.Builder
 
 	for y := len(pit) - 1; y >= 0; y -= 1 {
 		bldr.WriteString(fmt.Sprintf("%4d ", y))
-		for _, cell := range pit[y] {
-			bldr.WriteRune(rune(cell))
+
+		var rockRow byte
+		rockRowY := rY - y
+		if rockRowY >= 0 && rockRowY < r.height() {
+			rockRow = r.getRow(rockRowY)
 		}
+
+		for i := 6; i >= 0; i -= 1 {
+			c := '.'
+			if pit[y]&(1<<i) != 0 {
+				c = '#'
+			}
+			if rockRow&(1<<i) != 0 {
+				c = '@'
+			}
+
+			bldr.WriteRune(c)
+		}
+
 		bldr.WriteRune('\n')
 	}
 
 	fmt.Println(bldr.String())
 }
 
-func emptyRow() []byte {
-	row := make([]byte, pitWidth)
-	for i := range row {
-		row[i] = '.'
-	}
-	return row
-}
-
 // Returns the new highest y
-func fall(r rock, y int, pit [][]byte, nextWind func() byte) int {
-	x := 2
-
-	//fmt.Printf("START: (%d, %d)\n", x, y)
+func fall(r rock, y int, pit []byte, nextWind func() byte) int {
+	//fmt.Printf("START: %d\n", y)
+	//printPit(pit, r, y)
 
 	// y always points to the TOP of the rock
 
+	var window uint32
+
 	for {
 		wind := nextWind()
-		//fmt.Printf("(%d, %d) %c\n", x, y, wind)
-
-		edge, dir := r.r, 1
-		if wind == '<' {
-			edge, dir = r.l, -1
-		}
 
 		canMove := true
-		for _, p := range edge {
-			testX := x + p.x + dir
+		shifted := r.shiftLeft()
+		if wind == '>' {
+			shifted = r.shiftRight()
+		}
 
-			if testX < 0 || testX >= pitWidth {
-				canMove = false
-				break
-			}
+		if wind == '<' && r.isFarLeft() {
+			canMove = false
+		} else if wind == '>' && r.isFarRight() {
+			canMove = false
+		} else {
+			// Constrict window to the height of the rock
+			testWindow := window << (8 * (4 - r.height()))
 
-			if pit[y-p.y][testX] == '#' {
-				canMove = false
-				break
-			}
+			canMove = uint32(shifted)&testWindow == 0
+			//fmt.Printf("WINDOW: %032b, %032b => %v, (%d, %d)\n", shifted, window, canMove, y, r.height())
 		}
 
 		if canMove {
+			r = shifted
+
 			//fmt.Printf("Move %c\n", wind)
-			x += dir
+			//printPit(pit, r, y)
+		} else {
+			//fmt.Printf("Can't move %c, %032b, %032b\n", wind, r, shifted)
 		}
 
 		if y == 0 {
@@ -195,40 +181,37 @@ func fall(r rock, y int, pit [][]byte, nextWind func() byte) int {
 			break
 		}
 
-		canFall := true
-		for _, p := range r.b {
-			testY := y - p.y - 1
-
-			if pit[testY][x+p.x] == '#' {
-				canFall = false
-				break
-			}
+		window = window << 8
+		if y-r.height() >= 0 {
+			window |= uint32(pit[y-r.height()])
+		} else {
+			window |= uint32(fullRow)
 		}
+		// Constrict window to the height of the rock
+		testWindow := window << (8 * (4 - r.height()))
+
+		canFall := uint32(r)&testWindow == 0
+		//fmt.Printf("WINDOW: %032b, %032b => %v (%d, %d)\n", r, testWindow, canFall, y, r.height())
 
 		if canFall {
 			y -= 1
+			//fmt.Printf("Fall\n")
+			//printPit(pit, r, y)
 		} else {
 			break
 		}
 	}
 
-	//fmt.Printf("END: (%d, %d)\n", x, y)
+	//fmt.Printf("END: %d\n", y)
 
 	// Lock in the rock
-	for rY, row := range r.shape {
-		for rX, c := range row {
-			if c == '.' {
-				continue
-			}
-
-			if pit[y-rY][x+rX] == '#' {
-				printPit(pit)
-				fmt.Println(r)
-				panic(fmt.Sprintf("Invalid placement into (%d, %d) (%d, %d)", x+rX, y-rY, rX, rY))
-			}
-
-			pit[y-rY][x+rX] = '#'
+	for i := 0; i < r.height(); i += 1 {
+		if y-i < 0 {
+			continue
 		}
+
+		row := r.getRow(i)
+		pit[y-i] |= row
 	}
 
 	return y + 1
