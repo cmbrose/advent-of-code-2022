@@ -84,7 +84,7 @@ func main() {
 	monkeyOrder := []int{}
 	monkeys := make(map[int]*monkey)
 
-	for _, block := range util.ReadInputBlocks() {
+	for _, block := range util.ReadInputBlocks("./input.txt") {
 		idStr := strings.TrimSuffix(strings.Split(block[0], " ")[1], ":")
 		id := util.AssertInt(idStr)
 

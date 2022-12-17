@@ -93,7 +93,7 @@ func main() {
 
 	pairs := []monkeyWorryPair{}
 
-	for _, block := range util.ReadInputBlocks() {
+	for _, block := range util.ReadInputBlocks("./input.txt") {
 		idStr := strings.TrimSuffix(strings.Split(block[0], " ")[1], ":")
 		id := util.AssertInt(idStr)
 

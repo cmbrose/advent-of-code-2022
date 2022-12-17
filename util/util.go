@@ -16,14 +16,14 @@ func Check(err error) {
 }
 
 func ReadInputLines(path string) []string {
-	content, err := os.ReadFile("./input.txt")
+	content, err := os.ReadFile(path)
 	Check(err)
 
 	return strings.Split(string(content), "\n")
 }
 
-func ReadInputBlocks() [][]string {
-	content, err := os.ReadFile("./input.txt")
+func ReadInputBlocks(f string) [][]string {
+	content, err := os.ReadFile(f)
 	Check(err)
 
 	blocks := strings.Split(string(content), "\n\n")

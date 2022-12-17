@@ -185,7 +185,7 @@ func isValid(left, right nestedList) result {
 func main() {
 	sum := 0
 
-	for i, block := range util.ReadInputBlocks() {
+	for i, block := range util.ReadInputBlocks("./input.txt") {
 		left, err := parseList(block[0])
 		util.Check(err)
 
