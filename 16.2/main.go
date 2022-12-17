@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"main/util"
-	"math"
 	"regexp"
 	"strings"
 
@@ -96,7 +95,7 @@ func minifyValves(valves []*valve) map[string]*valve {
 		}
 	}
 
-	grid := util.FillGrid(len(valves), len(valves), math.MaxInt)
+	grid := util.FillGrid(len(valves), len(valves), 10000)
 	for i, v := range valves {
 		grid[i][i] = 0
 		for _, n := range v.neighbors {
@@ -108,7 +107,9 @@ func minifyValves(valves []*valve) map[string]*valve {
 	for k := range valves {
 		for i := range valves {
 			for j := range valves {
-				grid[i][j] = util.MaxInt(grid[i][j], grid[i][k]+grid[k][j])
+				if grid[i][j] > grid[i][k]+grid[k][j] {
+					grid[i][j] = grid[i][k] + grid[k][j]
+				}
 			}
 		}
 	}
@@ -123,13 +124,20 @@ func minifyValves(valves []*valve) map[string]*valve {
 		}
 
 		for u, j := range nonZeroValveToIndex {
-			clone.neighbors = append(clone.neighbors, struct {
-				v *valve
-				w int
-			}{u, grid[i][j]})
+			if u2, ok := minified[u.name]; ok {
+				clone.neighbors = append(clone.neighbors, struct {
+					v *valve
+					w int
+				}{u2, grid[i][j]})
+
+				u2.neighbors = append(u2.neighbors, struct {
+					v *valve
+					w int
+				}{clone, grid[i][j]})
+			}
 		}
 
-		minified[v.name] = v
+		minified[v.name] = clone
 	}
 
 	return minified
@@ -213,18 +221,28 @@ func getMaxPressure(closedStates *bitvector.BitVector, valves map[string]*valve)
 
 func getMaxPressureReliefRec(v *valve, minutesLeft int, fromValve string, cache map[string]int, getStateKey func(string, int) string, remainingPressure int) int {
 	if minutesLeft <= 0 || remainingPressure == 0 {
-		//fmt.Printf("%s | %d\n", path, 0)
 		return 0
 	}
 
 	stateKey := getStateKey(v.name, minutesLeft)
 
 	if val, ok := cache[stateKey]; ok {
-		//fmt.Printf("%s | %d (cache %s)\n", path, val, stateKey)
 		return val
 	}
 
 	maxPressure := 0
+
+	if v.isClosed() {
+		v.open()
+
+		openingRelief := (minutesLeft - 1) * v.flowRate
+
+		testPressure := getMaxPressureReliefRec(v, minutesLeft-1, "", cache, getStateKey, remainingPressure-v.flowRate)
+		maxPressure = util.MaxInt(maxPressure, testPressure+openingRelief)
+
+		// Reset state before returning to the caller
+		v.close()
+	}
 
 	for _, n := range v.neighbors {
 		if n.v.name == fromValve {
@@ -235,20 +253,6 @@ func getMaxPressureReliefRec(v *valve, minutesLeft int, fromValve string, cache 
 		maxPressure = util.MaxInt(maxPressure, testPressure)
 	}
 
-	if v.isClosed() {
-		v.open()
-		minutesLeft -= 1
-
-		openingRelief := minutesLeft * v.flowRate
-
-		testPressure := getMaxPressureReliefRec(v, minutesLeft, "", cache, getStateKey, remainingPressure-v.flowRate)
-		maxPressure = util.MaxInt(maxPressure, testPressure+openingRelief)
-
-		// Reset state before returning to the caller
-		v.close()
-	}
-
-	//fmt.Printf("%s | %d (%d, %s)\n", path, maxPressure, minutesLeft, stateKey)
 	cache[stateKey] = maxPressure
 	return maxPressure
 }
