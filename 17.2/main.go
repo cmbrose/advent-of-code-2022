@@ -1,7 +1,7 @@
 package main
 
 import (
-	"container/heap"
+	"encoding/hex"
 	"fmt"
 	"main/util"
 	"strings"
@@ -87,62 +87,29 @@ func main() {
 		return w
 	}
 
-	truncAmount := 0
 	top := 0
 	pit := []byte{}
 
 	type state struct {
-		pit string
-		rc  int
-		wc  int
+		pitSlice string
+		rc       int
+		wc       int
 	}
-	type nextState struct {
-		state
+
+	type snapshot struct {
 		top int
+		y   int
 	}
-	cache := make(map[state]nextState)
 
-	// startState := state{
-	// 	pit: hex.EncodeToString(pit),
-	// 	rc:  rockCursor,
-	// 	wc:  windCursor,
-	// }
+	cache := make(map[state]snapshot)
 
-	cacheHits := 0
-	target := 2022
+	var loopLen int
+	var loopHeight int
 
-	for y := 0; y < target; y += 1 {
-		if y%100 == 0 {
-			fmt.Println(y, truncAmount, top, len(cache), cacheHits)
-			cacheHits = 0
-		}
+	target := 1_000_000_000_000
 
-		// if cached, ok := cache[startState]; ok && false {
-		// 	cacheHits += 1
-		// 	//fmt.Println("Found cached")
-		// 	windCursor = cached.wc
-		// 	rockCursor = cached.rc
-		// 	top = cached.top
-		// 	newPit, _ := hex.DecodeString(cached.pit)
-
-		// 	if len(newPit) < len(pit) {
-		// 		truncAmount += len(pit) - len(newPit)
-		// 	}
-		// 	pit = newPit
-
-		// 	startState = cached.state
-		// 	continue
-		// }
-
-		if y%100 == 0 {
-			trimY := searchForTrim(pit)
-			if trimY > 0 {
-				truncAmount += trimY + 1
-				top -= (trimY + 1)
-				pit = pit[trimY+1:]
-			}
-		}
-
+	y := 0
+	for y = 0; y < target; y += 1 {
 		r := nextRock()
 		requiredHeight := top + 3 + r.height()
 
@@ -153,23 +120,56 @@ func main() {
 		testTop := fall(r, requiredHeight-1, pit, nextWind)
 		top = util.MaxInt(top, testTop)
 
-		// endState := nextState{
-		// 	state: state{
-		// 		pit: hex.EncodeToString(pit),
-		// 		rc:  rockCursor,
-		// 		wc:  windCursor,
-		// 	},
-		// 	top: top,
-		// }
+		s := state{
+			pitSlice: getPitSlice(pit, top),
+			rc:       rockCursor,
+			wc:       windCursor,
+		}
 
-		// cache[startState] = endState
-		// startState = endState.state
-		//printPit(pit, 0, 0)
+		if seen, ok := cache[s]; ok {
+			loopLen = y - seen.y
+			loopHeight = top - seen.top
+			y += 1 // This iteration finished but we'll skip the increment
+			break
+		}
+
+		snap := snapshot{
+			top: top,
+			y:   y,
+		}
+
+		cache[s] = snap
 	}
-	fmt.Println(target, truncAmount, top, len(cache), cacheHits)
+
+	//fmt.Printf("Each loop of length %d adds %d\n", loopLen, loopHeight)
+
+	loops := (target - y) / loopLen
+	y += loops * loopLen
+	incrTop := loops * loopHeight
+
+	//fmt.Printf("Simulated %d loops => %d, %d\n", loops, y, incrTop)
+
+	for ; y < target; y += 1 {
+		r := nextRock()
+		requiredHeight := top + 3 + r.height()
+
+		for height := len(pit); height < requiredHeight; height += 1 {
+			pit = append(pit, 0)
+		}
+
+		testTop := fall(r, requiredHeight-1, pit, nextWind)
+		top = util.MaxInt(top, testTop)
+	}
 
 	//printPit(pit, 0, 0)
-	fmt.Println(top + truncAmount)
+	fmt.Println(top + incrTop)
+}
+
+func getPitSlice(pit []byte, top int) string {
+	size := util.MinInt(100, top)
+
+	slice := pit[top-size : top]
+	return hex.EncodeToString(slice)
 }
 
 func printPit(pit []byte, r rock, rY int) {
@@ -200,95 +200,6 @@ func printPit(pit []byte, r rock, rY int) {
 	}
 
 	fmt.Println(bldr.String())
-}
-
-func searchForTrim(pit []byte) int {
-	var y int
-	for y = len(pit) - 1; y > 0; y -= 1 {
-		if pit[y]&0b01000000 != 0 {
-			break
-		}
-	}
-
-	if y <= 0 {
-		return 0
-	}
-
-	type point struct{ x, y int }
-
-	dist := make(map[point]int)
-	prev := make(map[point]point)
-	seen := make(map[point]bool)
-
-	q := util.NewPriorityQueue(func(a, b point) bool {
-		if a.x > b.x {
-			return true
-		}
-		return a.y > b.y
-	})
-
-	start := point{0, y}
-	end := point{-1, -1}
-
-	dist[start] = 0
-	heap.Push(q, start)
-
-	for q.Len() > 0 {
-		p := q.Pop().(point)
-
-		if seen[p] {
-			continue
-		}
-		seen[p] = true
-
-		x, y := p.x, p.y
-		if x == 7 {
-			end = p
-			break
-		}
-
-		alt := dist[p] + 1
-
-		up := point{x, y + 1}
-		if !seen[up] && up.y < len(pit) && pit[up.y]&(1<<(7-up.x)) != 0 {
-			if d, ok := dist[up]; !ok || d > alt {
-				dist[up] = alt
-				prev[up] = p
-			}
-			heap.Push(q, up)
-		}
-
-		right := point{x + 1, y}
-		if !seen[right] && pit[right.y]&(1<<(7-right.x)) != 0 {
-			if d, ok := dist[right]; !ok || d > alt {
-				dist[right] = alt
-				prev[right] = p
-			}
-			heap.Push(q, right)
-		}
-
-		down := point{x, y - 1}
-		if !seen[down] && down.y > 0 && pit[down.y]&(1<<(7-down.x)) != 0 {
-			if d, ok := dist[down]; !ok || d > alt {
-				dist[down] = alt
-				prev[down] = p
-			}
-			heap.Push(q, down)
-		}
-	}
-
-	if end.x == -1 {
-		return 0
-	}
-
-	minY := end.y
-	for end, ok := prev[end]; ok; end, ok = prev[end] {
-		if end.y < minY {
-			minY = end.y
-		}
-	}
-
-	return minY
 }
 
 // Returns the new highest y
